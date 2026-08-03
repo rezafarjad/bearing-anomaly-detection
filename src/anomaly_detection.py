@@ -30,6 +30,22 @@ def rows_to_matrix(rows: list[dict[str, str]]) -> np.ndarray:
     )
 
 
+def calibrate_anomaly_threshold(
+    training_scores: np.ndarray,
+    quantile: float = 0.95,
+) -> float:
+    """Set an anomaly threshold from the normal training-score distribution."""
+    training_scores = np.asarray(training_scores, dtype=float)
+
+    if training_scores.ndim != 1 or training_scores.size == 0:
+        raise ValueError("training_scores must be a non-empty one-dimensional array")
+
+    if not 0 < quantile < 1:
+        raise ValueError("quantile must be between 0 and 1")
+
+    return float(np.quantile(training_scores, quantile))
+
+
 def split_train_and_evaluation_rows(
     rows: list[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
@@ -62,10 +78,14 @@ def main() -> None:
     )
     model.fit(training_features)
 
-    predictions = model.predict(evaluation_features)
-    anomaly_scores = -model.decision_function(evaluation_features)
+    training_scores = -model.score_samples(training_features)
+    anomaly_threshold = calibrate_anomaly_threshold(training_scores)
+
+    anomaly_scores = -model.score_samples(evaluation_features)
+    predictions = np.where(anomaly_scores > anomaly_threshold, -1, 1)
 
     print(f"Training normal windows: {len(training_rows)}")
+    print(f"Calibrated anomaly threshold: {anomaly_threshold:.4f}")
     print("\nMean anomaly score by condition (higher means more unusual):")
 
     conditions = sorted({row["condition"] for row in evaluation_rows})
