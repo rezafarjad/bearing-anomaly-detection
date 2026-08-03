@@ -328,3 +328,13 @@ for outer-race-fault identification.
 
 \- CWRU Bearing Data Center: bearing geometry and drive-end fault data.
 
+
+### Baseline results table
+
+| Class | Selected band (Hz) | Expected signature (Hz) | Key observed peak (Hz) | Interpretation |
+|---|---:|---:|---:|---|
+| Normal | 1609–2609 | None | 447.9 | No fault-frequency claim |
+| Inner race | 1000–2000 | BPFI: 159.93 | 159.6 | Strong agreement |
+| Ball | 4422–5422 | 2×BSF: 139.20 | No clear match | Dominated by shaft harmonics |
+| Outer race | 531–1531 | BPFO: 105.87 | No clear match | Not identified by baseline |
+
