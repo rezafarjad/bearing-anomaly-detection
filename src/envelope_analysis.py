@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import stft, butter, filtfilt, hilbert, find_peaks
-from data_loader import load_de_signal
+from .data_loader import load_de_signal
+from pathlib import Path
+
 
 SAMPLING_RATE = 12000  # Hz
 
@@ -21,17 +23,30 @@ def spectral_kurtosis(signal, fs, nperseg=256):
 
 
 def best_band(freqs, kurt, fs, min_freq=500, bandwidth=1000):
-    """Find the frequency band with peak spectral kurtosis, above min_freq
-    to avoid low-frequency shaft rotation harmonics, and safely below Nyquist."""
+    """Select the most impulsive band that fits at the full bandwidth."""
     nyquist = fs / 2
-    max_freq = nyquist * 0.95  # stay safely under Nyquist
+    max_freq = nyquist * 0.95
+    half_bandwidth = bandwidth / 2
 
-    mask = (freqs >= min_freq) & (freqs <= max_freq)
-    peak_idx = np.argmax(kurt[mask])
-    center_freq = freqs[mask][peak_idx]
+    minimum_center = min_freq + half_bandwidth
+    maximum_center = max_freq - half_bandwidth
 
-    low = max(center_freq - bandwidth / 2, min_freq)
-    high = min(center_freq + bandwidth / 2, max_freq)
+    mask = (
+        (freqs >= minimum_center)
+        & (freqs <= maximum_center)
+    )
+
+    if not np.any(mask):
+        raise ValueError(
+            "No valid band centre can fit the requested bandwidth"
+        )
+
+    peak_index = np.argmax(kurt[mask])
+    center_freq = freqs[mask][peak_index]
+
+    low = center_freq - half_bandwidth
+    high = center_freq + half_bandwidth
+
     return low, high, center_freq
 
 
@@ -78,9 +93,11 @@ def analyze(filename, label):
 if __name__ == "__main__":
     results = []
     for label, filename in [
-        ("Normal", "Normal_1hp.mat"),
-        ("Inner Race Fault (0.007\")", "IR007_1hp.mat"),
-    ]:
+    ("Normal", "Normal_1hp.mat"),
+    ("Inner Race Fault (0.007\")", "IR007_1hp.mat"),
+    ("Ball Fault (0.007\")", "B007_1hp.mat"),
+    ("Outer Race Fault (0.007\")", "OR007_1hp.mat"),
+]:
         results.append(analyze(filename, label))
 
     fig, axes = plt.subplots(len(results), 1, figsize=(10, 6), sharex=True)
@@ -91,6 +108,7 @@ if __name__ == "__main__":
         ax.set_ylabel("Magnitude")
     axes[-1].set_xlabel("Frequency (Hz)")
     plt.tight_layout()
-    plt.savefig("../figures/envelope_spectrum_comparison.png", dpi=150)
+    output_path = Path(__file__).resolve().parent.parent / "figures" / "envelope_spectrum_comparison.png"
+    fig.savefig(output_path, dpi=150)
     print("\nSaved plot to ../figures/envelope_spectrum_comparison.png")
     plt.show()
