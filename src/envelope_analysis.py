@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import stft, butter, filtfilt, hilbert, find_peaks
 from .data_loader import load_de_signal
 from pathlib import Path
-
+from .band_scan import select_kurtosis_band
 
 SAMPLING_RATE = 12000  # Hz
 
@@ -68,10 +68,16 @@ def envelope_spectrum(signal, fs):
 def analyze(filename, label):
     signal = load_de_signal(filename)
 
-    sk_freqs, kurt = spectral_kurtosis(signal, SAMPLING_RATE)
-    low, high, center = best_band(sk_freqs, kurt, SAMPLING_RATE)
+    selected_band = select_kurtosis_band(signal, SAMPLING_RATE)
+    low = selected_band.low_hz
+    high = selected_band.high_hz
+    center = (low + high) / 2
+
     print(f"\n--- {label} ---")
-    print(f"Selected band via spectral kurtosis: {low:.0f}-{high:.0f} Hz (center {center:.0f} Hz)")
+    print(
+        "Selected band via multi-resolution kurtosis scan: "
+        f"{low:.0f}-{high:.0f} Hz (center {center:.0f} Hz)"
+    )
 
     filtered = bandpass_filter(signal, SAMPLING_RATE, low, high)
 

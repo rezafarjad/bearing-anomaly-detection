@@ -292,6 +292,19 @@ Interpretation: the present selected band does not yet provide strong evidence
 
 for outer-race-fault identification.
 
+### Method B: multi-resolution kurtosis band scan
+
+| Class | Selected band (Hz) | Expected signature (Hz) | Key observed peak (Hz) | Interpretation |
+|---|---:|---:|---:|---|
+| Normal | 625–875 | None | No relevant fault peak | Healthy reference |
+| Inner race | 4000–5000 | BPFI: 159.93 | 159.6 | Strong agreement |
+| Ball | 5250–5500 | 2×BSF: 139.20 | No clear match | Not identified |
+| Outer race | 4500–5500 | BPFO: 105.87 | 106.3, 212.6 | Strong BPFO and second harmonic evidence |
+
+Method B improved outer-race detection compared with Method A. Both methods
+identified the inner-race signature. Neither method established a clear ball-fault
+signature for this specific recording and configuration.
+
 
 
 \## 7. Next steps
