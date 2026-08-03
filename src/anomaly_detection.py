@@ -3,17 +3,15 @@
 import csv
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
 
 FEATURE_NAMES = ("rms", "kurtosis", "crest_factor")
-FEATURE_PATH = (
-    Path(__file__).resolve().parent.parent
-    / "data"
-    / "processed"
-    / "window_features.csv"
-)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+FEATURE_PATH = PROJECT_ROOT / "data" / "processed" / "window_features.csv"
+FIGURE_PATH = PROJECT_ROOT / "figures" / "anomaly_score_comparison.png"
 
 
 def load_feature_rows(path: Path) -> list[dict[str, str]]:
@@ -65,6 +63,35 @@ def split_train_and_evaluation_rows(
     return training_rows, evaluation_rows
 
 
+def plot_anomaly_scores(
+    scores_by_condition: dict[str, np.ndarray],
+    threshold: float,
+) -> None:
+    """Save a box plot of anomaly-score distributions."""
+    conditions = list(scores_by_condition)
+    values = [scores_by_condition[condition] for condition in conditions]
+
+    fig, axis = plt.subplots(figsize=(9, 5))
+    axis.boxplot(values, tick_labels=conditions)
+    axis.axhline(
+        threshold,
+        color="red",
+        linestyle="--",
+        label="Calibrated anomaly threshold",
+    )
+    axis.set_ylabel("Anomaly score (higher means more unusual)")
+    axis.set_title("Anomaly Scores by Bearing Condition")
+    axis.tick_params(axis="x", rotation=20)
+    axis.legend()
+
+    FIGURE_PATH.parent.mkdir(exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(FIGURE_PATH, dpi=150)
+    plt.show()
+
+    print(f"Saved plot to {FIGURE_PATH}")
+
+
 def main() -> None:
     rows = load_feature_rows(FEATURE_PATH)
     training_rows, evaluation_rows = split_train_and_evaluation_rows(rows)
@@ -88,7 +115,9 @@ def main() -> None:
     print(f"Calibrated anomaly threshold: {anomaly_threshold:.4f}")
     print("\nMean anomaly score by condition (higher means more unusual):")
 
+    scores_by_condition = {}
     conditions = sorted({row["condition"] for row in evaluation_rows})
+
     for condition in conditions:
         indices = [
             index
@@ -99,12 +128,15 @@ def main() -> None:
         condition_scores = anomaly_scores[indices]
         condition_predictions = predictions[indices]
         anomaly_rate = np.mean(condition_predictions == -1)
+        scores_by_condition[condition] = condition_scores
 
         print(
             f"{condition:18} "
             f"mean_score={np.mean(condition_scores):.4f} "
             f"flagged={anomaly_rate:.0%}"
         )
+
+    plot_anomaly_scores(scores_by_condition, anomaly_threshold)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,11 @@ import unittest
 
 import numpy as np
 
-from src.anomaly_detection import rows_to_matrix, split_train_and_evaluation_rows
+from src.anomaly_detection import (
+    calibrate_anomaly_threshold,
+    rows_to_matrix,
+    split_train_and_evaluation_rows,
+)
 
 
 class TestAnomalyDetection(unittest.TestCase):
@@ -27,6 +31,14 @@ class TestAnomalyDetection(unittest.TestCase):
         self.assertEqual(len(evaluation_rows), 2)
         self.assertEqual(evaluation_rows[0]["condition"], "normal")
         self.assertEqual(evaluation_rows[1]["condition"], "inner_race_fault")
+
+    def test_calibrates_threshold_from_normal_scores(self):
+        threshold = calibrate_anomaly_threshold(
+            np.array([0.0, 1.0, 2.0, 3.0]),
+            quantile=0.75,
+        )
+
+        self.assertAlmostEqual(threshold, 2.25)
 
 
 if __name__ == "__main__":
